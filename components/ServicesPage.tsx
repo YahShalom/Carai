@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import SEO from './SEO';
 import { 
   ArrowLeft, 
   Check, 
@@ -10,6 +11,7 @@ import {
   Database, 
   GitBranch, 
   Zap,
+    Palette,
   Star,
   Quote,
   TrendingUp,
@@ -138,6 +140,27 @@ const SERVICES_DATA = [
     color: 'from-red-500 to-rose-400',
     shadow: 'shadow-red-500/20 hover:shadow-red-500/40'
   }
+    ,
+    {
+        id: 'graphic-designs',
+        title: 'Graphic Designs & Branding',
+        icon: Palette,
+        description: 'Visual identity, ad creatives, and print-ready assets for brands of all sizes.',
+        idealFor: 'Brands that need logos or rebrands, social media content packs, product labels & packaging, signs, flyers, brochures, and posters.',
+        includes: [
+            'Brand identity kits (logo, colors, typography)',
+            'Social media post & story templates',
+            'Ad creatives for Meta / Google / TikTok',
+            'Product labels and bottle/packaging layouts',
+            'Business cards, letterheads, and stationery',
+            'Print-ready export (CMYK, bleed, trim)',
+            'Two revision rounds per project (configurable)'
+        ],
+        tech: 'Design + Figma / Affinity / Print-ready exports',
+        range: 'Project-Based',
+        color: 'from-pink-500 to-fuchsia-400',
+        shadow: 'shadow-pink-500/20 hover:shadow-pink-500/40'
+    }
 ];
 
 const TESTIMONIALS = [
@@ -176,6 +199,15 @@ const ServicesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-20">
+            <SEO 
+                title="Services | Carai Agency" 
+                description="Explore our AI-powered web services: landing pages, automation systems, and full-stack applications."
+                url="https://carai.agency/services"
+                breadcrumbs={[
+                    { name: 'Home', url: 'https://carai.agency' },
+                    { name: 'Services', url: 'https://carai.agency/services' }
+                ]}
+            />
       {/* Header Image */}
       <div 
         className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden parallax-bg mb-20"
@@ -211,12 +243,13 @@ const ServicesPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Intro */}
-        <div className="text-center mb-16 reveal">
-            <h2 className="text-3xl font-display font-bold text-navy-900 dark:text-white mb-6">Choose Your Growth Engine</h2>
+        <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-navy-900 dark:text-white mb-6">Choose Your Growth Engine</h2>
             <p className="text-navy-600 dark:text-silver-400 max-w-3xl mx-auto text-lg leading-relaxed">
                 Whether you need a lightning-fast landing page to capture leads or a full-scale AI application to run your business, 
                 we have a tailored solution ready to deploy.
             </p>
+            <p className="mt-4 text-sm text-navy-600 dark:text-silver-400">Also offering: <a href="/artwork" className="text-gold-500 font-bold">Graphic Designs &amp; Branding</a></p>
         </div>
 
         {/* Services Grid */}

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { SOCIAL_LINKS } from '../constants';
+import { SOCIAL_LINKS, PRIMARY_EMAIL, CARAI_OG_IMAGE } from '../constants';
 import { Mail, Send, CheckCircle, ArrowLeft, ChevronDown, Upload, HelpCircle, AlertCircle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { sendContact, ContactPayload } from '../services/contactService';
+import { trackEvent } from '../lib/analytics';
+import SEO from './SEO';
 
 type ServiceType = 
   | 'one-page' 
@@ -10,6 +13,7 @@ type ServiceType =
   | 'partial-backend' 
   | 'full-backend' 
   | 'automation-only' 
+    | 'graphic-designs'
   | 'collab' 
   | 'support';
 
@@ -20,6 +24,7 @@ const SERVICE_OPTIONS: { value: ServiceType; label: string }[] = [
   { value: 'partial-backend', label: 'Website With Partial Backend' },
   { value: 'full-backend', label: 'Website With Full Backend' },
   { value: 'automation-only', label: 'AI Automation Only' },
+    { value: 'graphic-designs', label: 'Graphic Designs & Branding' },
   { value: 'collab', label: 'Collaboration / Partnerships' },
   { value: 'support', label: 'Customer Support / Existing Project' },
 ];
@@ -28,6 +33,7 @@ const ContactPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [serviceType, setServiceType] = useState<ServiceType>('one-page');
   const [formState, setFormState] = useState<'idle' | 'submitting' | 'success'>('idle');
+    const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Generic Form Data State
   const [formData, setFormData] = useState<Record<string, any>>({
@@ -76,6 +82,8 @@ const ContactPage: React.FC = () => {
     issueType: '',
     issueDesc: '',
     urgency: 'Normal'
+        ,
+        designDetails: ''
   });
 
   useEffect(() => {
@@ -90,6 +98,7 @@ const ContactPage: React.FC = () => {
       else if (lower.includes('ai assistant') || lower.includes('ai-augmented')) setServiceType('ai-augmented');
       else if (lower.includes('backend')) setServiceType('full-backend'); // Default to full for broad match
       else if (lower.includes('automation')) setServiceType('automation-only');
+            else if (lower.includes('graphic') || lower.includes('design') || lower.includes('artwork')) setServiceType('graphic-designs');
     }
   }, [searchParams]);
 
@@ -107,26 +116,66 @@ const ContactPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormState('submitting');
-    
-    // Construct the payload including the service type
-    const payload = {
-        serviceType,
-        ...formData
+    const validate = (data: Record<string, any>): Record<string, string> => {
+        const e: Record<string, string> = {};
+        if (!data.fullName || data.fullName.trim().length < 2) e.fullName = 'Please enter your full name.';
+        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!data.email || !emailRe.test(String(data.email).toLowerCase())) e.email = 'Please enter a valid email address.';
+        // If a project goal is required for certain services
+        if ((serviceType === 'one-page' || serviceType === 'ai-augmented') && !data.goal && !data.aiGoal) {
+            e.goal = 'Please provide a short description of your project or goal.';
+        }
+        return e;
     };
-    
-    console.log("Submitting:", payload);
 
-    setTimeout(() => {
-      setFormState('success');
-      setTimeout(() => setFormState('idle'), 5000);
-      // Reset logic could go here
-    }, 1500);
-  };
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrors({});
 
-  const isCollabOrSupport = serviceType === 'collab' || serviceType === 'support';
+        const payload: ContactPayload = {
+            serviceType,
+            fullName: formData.fullName,
+            email: formData.email,
+            whatsapp: formData.whatsapp,
+            brandName: formData.brandName,
+            website: formData.website,
+            message: formData.sitemap || formData.aiGoal || formData.goal || formData.issueDesc || '',
+            ...formData,
+        };
+
+        const validation = validate(payload);
+        if (Object.keys(validation).length > 0) {
+            setErrors(validation);
+            // focus first invalid field for keyboard users
+            const first = Object.keys(validation)[0];
+            const el = document.getElementById(first);
+            if (el) el.focus();
+            return;
+        }
+
+    try {
+      setFormState('submitting');
+      const result = await sendContact(payload);
+      if (result.success) {
+        // PHASE 1: Track conversion in GA4 + GAS
+        trackEvent('contact_form_submitted', {
+          service_type: serviceType,
+          has_phone: !!formData.whatsapp,
+          message_length: (formData.sitemap || formData.aiGoal || formData.goal || '').length,
+        });
+        
+        setFormState('success');
+        // keep success visible briefly
+        setTimeout(() => setFormState('idle'), 5000);
+      } else {
+        setErrors({ submit: result.message || 'Failed to send. Please try again later.' });
+        setFormState('idle');
+      }
+    } catch (err) {
+      setErrors({ submit: 'Unexpected error. Please try again later.' });
+      setFormState('idle');
+    }
+  };  const isCollabOrSupport = serviceType === 'collab' || serviceType === 'support';
 
   // --- SUB-COMPONENTS FOR FORM SECTIONS ---
 
@@ -134,25 +183,27 @@ const ContactPage: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Full Name *</label>
-            <input type="text" name="fullName" required value={formData.fullName} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="Jane Doe" />
+            <label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Full Name *</label>
+            <input id="fullName" type="text" name="fullName" required aria-invalid={!!errors.fullName} aria-describedby={errors.fullName ? 'fullName-error' : undefined} value={formData.fullName} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="Jane Doe" />
+            {errors.fullName && <p id="fullName-error" className="text-xs text-red-500 mt-1">{errors.fullName}</p>}
         </div>
         <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Email Address *</label>
-            <input type="email" name="email" required value={formData.email} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="jane@example.com" />
+            <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Email Address *</label>
+            <input id="email" type="email" name="email" required aria-invalid={!!errors.email} aria-describedby={errors.email ? 'email-error' : undefined} value={formData.email} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="jane@example.com" />
+            {errors.email && <p id="email-error" className="text-xs text-red-500 mt-1">{errors.email}</p>}
         </div>
       </div>
       
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">WhatsApp / Phone</label>
-            <input type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="+1 (555) 000-0000" />
+            <label htmlFor="whatsapp" className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">WhatsApp / Phone</label>
+            <input id="whatsapp" type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="+1 (555) 000-0000" />
         </div>
         {/* Only show Brand/Website for non-support/collab if irrelevant, but usually relevant */}
         {!isCollabOrSupport && (
             <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Business / Brand Name</label>
-                <input type="text" name="brandName" value={formData.brandName} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="Acme Inc." />
+                <label htmlFor="brandName" className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Business / Brand Name</label>
+                <input id="brandName" type="text" name="brandName" value={formData.brandName} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="Acme Inc." />
             </div>
         )}
         {serviceType === 'collab' && (
@@ -166,8 +217,8 @@ const ContactPage: React.FC = () => {
       {!isCollabOrSupport && (
         <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Current Website / Socials</label>
-                <input type="text" name="website" value={formData.website} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="instagram.com/brand" />
+                <label htmlFor="website" className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Current Website / Socials</label>
+                <input id="website" type="text" name="website" value={formData.website} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="instagram.com/brand" />
             </div>
             <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">How did you hear about us?</label>
@@ -193,7 +244,8 @@ const ContactPage: React.FC = () => {
                 <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                     <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">What is this landing page for?</label>
-                        <input type="text" name="goal" required value={formData.goal} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="e.g. Selling a new ebook, booking barbershop appointments..." />
+                        <input id="goal" type="text" name="goal" required aria-invalid={!!errors.goal} aria-describedby={errors.goal ? 'goal-error' : undefined} value={formData.goal} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="e.g. Selling a new ebook, booking barbershop appointments..." />
+                        {errors.goal && <p id="goal-error" className="text-xs text-red-500 mt-1">{errors.goal}</p>}
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
@@ -299,7 +351,7 @@ const ContactPage: React.FC = () => {
                 <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                      <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">How should AI help you?</label>
-                        <textarea name="aiGoal" rows={3} required value={formData.aiGoal} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="e.g. Capture leads from chat, answer FAQs about pricing, draft blog posts..."></textarea>
+                        <textarea id="aiGoal" name="aiGoal" rows={3} required aria-invalid={!!errors.goal} aria-describedby={errors.goal ? 'goal-error' : undefined} value={formData.aiGoal} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="e.g. Capture leads from chat, answer FAQs about pricing, draft blog posts..."></textarea>
                     </div>
                      <div className="grid md:grid-cols-2 gap-6">
                          <div className="space-y-2">
@@ -378,7 +430,7 @@ const ContactPage: React.FC = () => {
                 <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                     <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">What are you trying to automate?</label>
-                        <input type="text" name="aiGoal" required value={formData.aiGoal} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="e.g. Lead follow-up emails, Data entry..." />
+                        <input id="aiGoal" type="text" name="aiGoal" required aria-invalid={!!errors.goal} aria-describedby={errors.goal ? 'goal-error' : undefined} value={formData.aiGoal} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="e.g. Lead follow-up emails, Data entry..." />
                     </div>
                     <div className="space-y-2">
                          <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Describe the current manual process</label>
@@ -463,7 +515,8 @@ const ContactPage: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Project Name / Website URL</label>
-                        <input type="text" name="projectName" required value={formData.projectName} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="example.com" />
+                        <input id="projectName" type="text" name="projectName" required aria-invalid={!!errors.projectName} aria-describedby={errors.projectName ? 'projectName-error' : undefined} value={formData.projectName} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="example.com" />
+                        {errors.projectName && <p id="projectName-error" className="text-xs text-red-500 mt-1">{errors.projectName}</p>}
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Issue Type</label>
@@ -477,10 +530,35 @@ const ContactPage: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                          <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Description of Issue / Request</label>
-                         <textarea name="issueDesc" rows={4} required value={formData.issueDesc} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="Please provide as much detail as possible..."></textarea>
+                         <textarea id="issueDesc" name="issueDesc" rows={4} required aria-invalid={!!errors.issueDesc} aria-describedby={errors.issueDesc ? 'issueDesc-error' : undefined} value={formData.issueDesc} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="Please provide as much detail as possible..."></textarea>
+                         {errors.issueDesc && <p id="issueDesc-error" className="text-xs text-red-500 mt-1">{errors.issueDesc}</p>}
                     </div>
                 </div>
              );
+
+                case 'graphic-designs':
+                    return (
+                        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">What do you need designed?</label>
+                                <textarea id="designDetails" name="designDetails" rows={4} value={formData.designDetails} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="Briefly describe the deliverables, sizes, format, and any brand references..." />
+                                <p className="text-xs text-navy-600 dark:text-silver-400 mt-2">Tell me what you need designed (logo, labels, social media pack, flyers, signage, etc.), the size/format, and any existing brand colors or examples you like.</p>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Preferred Formats / Tools</label>
+                                    <input type="text" name="toolsUsed" value={formData.toolsUsed} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none" placeholder="e.g. Figma, Affinity, AI assets, PNG/JPG/PDF (CMYK)" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-navy-600 dark:text-silver-400">Two revision rounds?</label>
+                                    <select name="hasAssets" value={formData.hasAssets} onChange={handleChange} className="w-full bg-silver-50 dark:bg-navy-950 border border-gold-400/20 px-4 py-3 text-navy-900 dark:text-white rounded-xl focus:ring-1 focus:ring-gold-400 outline-none">
+                                        <option value="no">No, not required</option>
+                                        <option value="yes">Yes, include 2 revision rounds</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    );
 
         default:
             return null;
@@ -489,6 +567,18 @@ const ContactPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-20">
+      <SEO 
+        title="Contact | Start a Project with Carai Agency"
+        description="Get in touch to discuss your AI-powered web project, automation system, or landing page."
+            image={CARAI_OG_IMAGE}
+            enableOG={true}
+        url="https://carai.agency/contact"
+                type="website"
+                breadcrumbs={[
+                    { name: 'Home', url: 'https://carai.agency' },
+                    { name: 'Contact', url: 'https://carai.agency/contact' }
+                ]}
+      />
       {/* Header Image */}
       <div 
         className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden parallax-bg mb-20"
@@ -496,9 +586,6 @@ const ContactPage: React.FC = () => {
             backgroundImage: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2672&auto=format&fit=crop")',
         }}
       >
-        <div className="absolute inset-0 bg-navy-900/80"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent"></div>
-        <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 relative z-10">
             <div className="max-w-7xl mx-auto">
                 <Link to="/" className="inline-flex items-center gap-2 text-silver-300 hover:text-white mb-6 transition-colors font-medium group">
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Return Home
@@ -510,7 +597,6 @@ const ContactPage: React.FC = () => {
                      Let's discuss how we can build something extraordinary together.
                 </p>
             </div>
-        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -607,8 +693,8 @@ const ContactPage: React.FC = () => {
                     <h4 className="text-navy-600 dark:text-silver-400 font-medium mb-2 flex items-center gap-2 text-sm uppercase tracking-wider">
                         <Mail className="w-4 h-4 text-gold-500" /> Direct Inquiry
                     </h4>
-                    <a href="mailto:raphael@example.com" className="text-lg font-bold text-navy-900 dark:text-white hover:text-gold-500 dark:hover:text-gold-400 transition-colors font-display break-all">
-                        raphael@example.com
+                    <a href={`mailto:${PRIMARY_EMAIL}`} className="text-lg font-bold text-navy-900 dark:text-white hover:text-gold-500 dark:hover:text-gold-400 transition-colors font-display break-all">
+                        {PRIMARY_EMAIL}
                     </a>
                 </div>
 

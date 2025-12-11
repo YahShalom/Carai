@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NAV_LINKS, SectionId } from '../constants';
+import { NAV_LINKS, SectionId, CARAI_LOGO_SRC } from '../constants';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 
@@ -53,12 +53,16 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div className="flex-shrink-0 flex items-center gap-3">
-            <a href="/" onClick={handleLogoClick} className="relative w-12 h-12 flex items-center justify-center cursor-pointer rounded-xl overflow-hidden border border-gold-400/30 shadow-lg shadow-gold-500/10">
-                 <img 
-                    src="https://ui-avatars.com/api/?name=CA&background=C59D24&color=020c1b&size=128&bold=true" 
-                    alt="Carai Agency Logo" 
-                    className="w-full h-full object-cover"
-                 />
+            <a href="/" onClick={handleLogoClick} className="relative w-12 h-12 flex items-center justify-center cursor-pointer rounded-xl overflow-hidden border border-gold-400/30 shadow-lg shadow-gold-500/10" aria-label="Carai Agency home">
+                {/* lazy-loaded favicon/avatar */}
+                {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
+                {/* @ts-ignore */}
+                <img
+                  loading="lazy"
+                  src={CARAI_LOGO_SRC}
+                  alt="Carai Agency Logo"
+                  className="w-full h-full object-cover"
+                />
             </a>
             <div className="flex flex-col leading-none">
                 <span className="font-display font-bold text-xl tracking-widest text-navy-900 dark:text-white">
@@ -77,6 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ theme, toggleTheme }) => {
                   key={link.label}
                   to={link.href}
                   onClick={(e) => handleNavClick(e, link.href)}
+                  aria-label={`Navigate to ${link.label}`}
                   className={`text-sm font-bold uppercase tracking-wider cursor-pointer transition-colors ${
                     location.pathname === link.href 
                       ? 'text-gold-500 dark:text-gold-400' 

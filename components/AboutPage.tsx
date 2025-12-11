@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Target, Eye, Sparkles } from 'lucide-react';
 import { ABOUT_DATA, COMPANY_MISSION, COMPANY_VISION, CORE_VALUES } from '../constants';
+import SEO from './SEO';
 
 const AboutPage: React.FC = () => {
   useEffect(() => {
@@ -10,6 +11,15 @@ const AboutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-20">
+      <SEO 
+        title="About Carai Agency | Caribbean AI Solutions"
+        description="Learn about Carai Agency's mission, vision, and team behind premium AI-powered web solutions."
+        url="https://carai.agency/about"
+                breadcrumbs={[
+                    { name: 'Home', url: 'https://carai.agency' },
+                    { name: 'About', url: 'https://carai.agency/about' }
+                ]}
+      />
       {/* Header Image with Parallax & Animated Overlay */}
       <div 
         className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden parallax-bg"

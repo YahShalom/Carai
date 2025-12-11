@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SOCIAL_LINKS, SectionId } from '../constants';
+import { SOCIAL_LINKS, SectionId, PRIMARY_EMAIL } from '../constants';
 import { Mail, Send, CheckCircle } from 'lucide-react';
 
 const Contact: React.FC = () => {
@@ -64,8 +64,8 @@ const Contact: React.FC = () => {
                     <h4 className="text-navy-600 dark:text-silver-200 font-medium mb-2 flex items-center gap-2">
                         <Mail className="w-4 h-4 text-gold-500" /> Direct Email
                     </h4>
-                    <a href="mailto:raphael@example.com" className="text-2xl font-bold text-navy-900 dark:text-white hover:text-gold-500 dark:hover:text-gold-400 transition-colors font-display">
-                        raphael@example.com
+                    <a href={`mailto:${PRIMARY_EMAIL}`} className="text-2xl font-bold text-navy-900 dark:text-white hover:text-gold-500 dark:hover:text-gold-400 transition-colors font-display">
+                      {PRIMARY_EMAIL}
                     </a>
                 </div>
             </div>

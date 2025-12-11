@@ -38,8 +38,9 @@ const TechBadge: React.FC<{ tech: string }> = ({ tech }) => {
 };
 
 const ProjectPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const project = PROJECTS_DATA.find(p => p.id === id);
+  const params = useParams<{ id?: string; slug?: string }>();
+  const idOrSlug = params.slug || params.id;
+  const project = PROJECTS_DATA.find(p => p.slug === idOrSlug || p.id === idOrSlug || p.id === params.id);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -62,13 +63,13 @@ const ProjectPage: React.FC = () => {
       <div 
         className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden parallax-bg"
         style={{
-            backgroundImage: `url(${project.imageUrl})`,
+            backgroundImage: `url(${project.heroImage || project.imageUrl})`,
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-navy-900/40 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full p-6 md:p-12">
             <div className="max-w-7xl mx-auto">
-                <Link to="/" className="inline-flex items-center gap-2 text-silver-300 hover:text-white mb-6 transition-colors font-medium">
+                <Link to="/portfolio" className="inline-flex items-center gap-2 text-silver-300 hover:text-white mb-6 transition-colors font-medium">
                     <ArrowLeft className="w-5 h-5" /> Back to Projects
                 </Link>
                 <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-2 shadow-black drop-shadow-lg">
@@ -89,6 +90,20 @@ const ProjectPage: React.FC = () => {
                     </p>
                 </div>
 
+                {/* Client Review - rendered from project data; kept immediately after description */}
+                {project.slug === 'perry-d-beauty-studio' && project.testimonial && (
+                  <div className="bg-white dark:bg-navy-800 p-8 rounded-3xl border border-gold-400/20 shadow-sm" aria-labelledby="client-review-heading">
+                    <h2 id="client-review-heading" className="text-2xl font-display font-bold text-navy-900 dark:text-white mb-4">Client Review</h2>
+                    <blockquote className="mt-2 text-navy-700 dark:text-silver-300 italic">{project.testimonial.text}</blockquote>
+                    {project.testimonial.author && (
+                      <p className="mt-4 font-bold text-navy-900 dark:text-white">— {project.testimonial.author}</p>
+                    )}
+                    {project.testimonial.resultHint && (
+                      <p className="mt-2 text-sm text-navy-600 dark:text-silver-400">{project.testimonial.resultHint}</p>
+                    )}
+                  </div>
+                )}
+
                 {project.features && (
                     <div className="bg-white dark:bg-navy-800 p-8 rounded-3xl border border-gold-400/20 shadow-sm">
                         <h2 className="text-2xl font-display font-bold text-navy-900 dark:text-white mb-6">Key Features</h2>
@@ -104,6 +119,7 @@ const ProjectPage: React.FC = () => {
                         </div>
                     </div>
                 )}
+                
             </div>
 
             {/* Sidebar */}
@@ -119,10 +135,16 @@ const ProjectPage: React.FC = () => {
 
                 <div className="bg-white dark:bg-navy-800 p-8 rounded-3xl border border-gold-400/20 shadow-sm space-y-4">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-navy-400 dark:text-silver-500 mb-2">Project Links</h3>
-                    {project.demoUrl && (
+                    {project && project.slug === 'perry-d-beauty-studio' ? (
+                      <a href={`https://www.perrydbeauty.store/#/`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-4 bg-gold-500 text-navy-900 font-bold uppercase tracking-wider text-sm hover:bg-gold-400 transition-colors shadow-lg shadow-gold-500/20 rounded-full">
+                        <ExternalLink className="w-4 h-4" /> View Website
+                      </a>
+                    ) : (
+                      project.demoUrl && (
                         <a href={project.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-4 bg-gold-500 text-navy-900 font-bold uppercase tracking-wider text-sm hover:bg-gold-400 transition-colors shadow-lg shadow-gold-500/20 rounded-full">
                             <ExternalLink className="w-4 h-4" /> Launch Demo
                         </a>
+                      )
                     )}
                     {project.repoUrl && (
                         <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-4 bg-navy-100 dark:bg-navy-900 text-navy-900 dark:text-white border-2 border-gold-400/10 font-bold uppercase tracking-wider text-sm hover:bg-white dark:hover:bg-navy-700 transition-colors rounded-full hover:border-gold-400">

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import LazyImage from './LazyImage';
 import { Link } from 'react-router-dom';
 import { ARTWORK_DATA } from '../constants';
 import { ArtworkCategory } from '../types';
 import { ArrowLeft, Palette, X, ZoomIn, Filter } from 'lucide-react';
+import SEO from './SEO';
 
 const ArtworkPage: React.FC = () => {
   const [filter, setFilter] = useState<ArtworkCategory>('All');
@@ -20,6 +22,15 @@ const ArtworkPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-20">
+            <SEO
+                title="Artwork & Design | Carai Agency"
+                description="Explore our creative design work including logos, ads, product labels, and brand identity projects."
+                url="https://carai.agency/artwork"
+                breadcrumbs={[
+                    { name: 'Home', url: 'https://carai.agency' },
+                    { name: 'Artwork', url: 'https://carai.agency/artwork' }
+                ]}
+            />
       {/* Header Image */}
       <div 
         className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden parallax-bg mb-20"
@@ -43,10 +54,10 @@ const ArtworkPage: React.FC = () => {
                     <span className="text-gold-500 font-bold tracking-widest uppercase text-sm">Creative Studio</span>
                 </div>
                 <h1 className="text-4xl md:text-6xl font-display font-bold text-white shadow-black drop-shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                    Art Work & Design
+                    Graphic Designs
                 </h1>
                 <p className="mt-4 text-xl text-silver-300 max-w-2xl font-light">
-                    Visual storytelling for brands. From identity design to high-impact advertising materials.
+                    Graphic design & branding services: From identity design to high-impact advertising materials.
                 </p>
             </div>
         </div>
@@ -83,9 +94,9 @@ const ArtworkPage: React.FC = () => {
                     style={{ animationDelay: `${idx * 100}ms` }}
                 >
                     <div className="relative aspect-[4/3] overflow-hidden cursor-pointer" onClick={() => setSelectedImage(item.imageUrl)}>
-                        <img 
-                            src={item.imageUrl} 
-                            alt={item.title} 
+                        <LazyImage
+                            src={item.imageUrl}
+                            alt={item.title}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
                         <div className="absolute inset-0 bg-navy-900/0 group-hover:bg-navy-900/40 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -133,9 +144,9 @@ const ArtworkPage: React.FC = () => {
                 className="relative max-w-5xl w-full max-h-[90vh] rounded-xl overflow-hidden shadow-2xl"
                 onClick={e => e.stopPropagation()}
             >
-                <img 
-                    src={selectedImage} 
-                    alt="Artwork Preview" 
+                <LazyImage
+                    src={selectedImage || ''}
+                    alt="Artwork Preview"
                     className="w-full h-full object-contain"
                 />
             </div>

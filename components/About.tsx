@@ -1,4 +1,5 @@
 import React from 'react';
+import LazyImage from './LazyImage';
 import { Link } from 'react-router-dom';
 import { ABOUT_DATA, SectionId } from '../constants';
 import { Code2, Brain, Rocket, ArrowRight } from 'lucide-react';
@@ -22,10 +23,10 @@ const About: React.FC = () => {
              <div className="relative overflow-hidden border-2 border-gold-400/30 shadow-2xl rounded-3xl">
                 {/* Image Placeholder Frame */}
                 <div className="w-full aspect-[4/5] bg-navy-100 dark:bg-navy-800 relative overflow-hidden rounded-3xl">
-                    <img 
-                        src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=2671&auto=format&fit=crop" 
-                        alt="Raphael Castellano" 
-                        className="w-full h-full object-cover opacity-90 dark:opacity-80 group-hover:scale-105 transition-transform duration-1000 grayscale hover:grayscale-0 rounded-3xl"
+                    <LazyImage
+                      src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=2671&auto=format&fit=crop"
+                      alt="Raphael Castellano"
+                      className="w-full h-full object-cover opacity-90 dark:opacity-80 group-hover:scale-105 transition-transform duration-1000 grayscale hover:grayscale-0 rounded-3xl"
                     />
                     <div className="absolute inset-0 bg-navy-900/10 dark:bg-navy-900/20 mix-blend-multiply rounded-3xl"></div>
                 </div>
