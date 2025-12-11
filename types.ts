@@ -1,13 +1,30 @@
 export interface Project {
   id: string;
+  slug: string;
   title: string;
+  client?: string;
+  date?: string;
+  role?: string;
   description: string;
   techStack: string[];
   imageUrl: string;
+  heroImage?: string;
+  gallery?: string[];
   demoUrl?: string;
   repoUrl?: string;
   features?: string[];
   tags?: string[];
+  serviceCategory?: string;
+  seo?: {
+    title?: string;
+    description?: string;
+    keywords?: string[];
+  };
+  testimonial?: {
+    text: string;
+    author?: string;
+    resultHint?: string;
+  };
 }
 
 export interface SkillCategory {
