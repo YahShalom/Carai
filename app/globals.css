@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: #050409;
+  color: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(148, 163, 184, 0.28);
+  color: #ffffff;
+}
+
+.glass {
+  background: rgba(12, 16, 34, 0.74);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  backdrop-filter: blur(24px);
+}
+
+.glow-border {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 70px rgba(110, 87, 255, 0.08);
+}
+
+.glass-panel {
+  background: rgba(10, 12, 27, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  backdrop-filter: blur(26px);
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.4), rgba(56, 189, 248, 0.18));
+  z-index: -1;
+}
+
+.luxury-panel {
+  background: rgba(7, 9, 23, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+}
+
+.mesh-background {
+  background-image: radial-gradient(circle at 20% 20%, rgba(124, 58, 237, 0.14), transparent 18%),
+    radial-gradient(circle at 80% 10%, rgba(14, 165, 233, 0.12), transparent 20%),
+    radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.08), transparent 22%);
+}
+
+.floating-orb {
+  box-shadow: 0 0 120px rgba(99, 102, 241, 0.18);
+  filter: blur(1px);
+}
+
+.hero-fade {
+  animation: float 12s ease-in-out infinite;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.16), rgba(148, 163, 184, 0.08));
+  background-size: 200% 100%;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
